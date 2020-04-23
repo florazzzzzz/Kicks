@@ -1,0 +1,221 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8" />
+<title>ZIM - Kicky APP</title>
+<script src="https://zimjs.org/cdn/1.2.4/createjs.js"></script>
+<script src="https://zimjs.org/cdn/10.8.0/zim.js"></script>
+<script src="https://zimjs.org/cdn/pizzazz_02.js"></script>
+
+<!-- import Box2D and ZIM Physics helper -->
+<script src="https://zimjs.org/cdn/Box2dWeb-2.1.a.3.min.js"></script>
+<script src="https://zimjs.org/cdn/physics_2.0.js"></script>
+<script src="https://zimjs.com/ten/header.js"></script>
+<script src="https://zimjs.org/cdn/game_2.2.js"></script>
+<script>
+
+    let stage = null;
+    let stageW = null;
+    let stageH = null;
+    const assets = ["headings.png","loveMan.png","background.png","legs.png","hurt.png","hurts.png","music.mp3","man.mp3","kick.mp3"];
+    const path = "assets/";
+
+
+const frame = new Frame("full", null, null, light, dark, assets, path);
+frame.on("ready", () => {
+    const stage = frame.stage;
+    let stageW = frame.width;
+    let stageH = frame.height;
+    pizzazz.listIcons();      
+
+    // put your code here
+    
+    const layoutManager = new LayoutManager();
+    
+    
+    // PAGE 1
+
+    const page1 = new Container(stageW, stageH).addTo();
+    page1.back = asset("background.png").sca(1.3).center(page1);
+    const header1 = asset("headings.png").clone().addTo(page1);
+    // const title = new Label("LAYOUT!!").center(header);
+    const music = asset("music.mp3");
+    const yo = asset("man.mp3");
+    const kicks = asset("kick.mp3");
+   
+   
+    
+    const content1 = new Container(600,800).addTo(page1);     
+    const score = new Label({text:0, align:"center", size:300,color:red})
+        .alp(.6).centerReg(content1);
+ 
+
+    const footer1 = new Container(500,100).addTo(page1);
+ 
+    const button1 = new Button({
+                 label:"music",
+                 width:150,
+                 height:50,
+                 backgroundColor:red,
+             })
+                 .sca(.5)
+                 .center(page1)
+                 .tap(function () {
+                    music.play();
+                 });
+
+
+    // create Physics with tall side borders and no border top
+    //addPhysics(obj, dynamic, contract, shape, friction, linear, angular, density, restitution, maskBits, categoryBits) 
+    const physics = new Physics(1);
+    new Boundary(0,-stageH,stageW,stageH*2);
+        // physics.remove(physics.borderTop);
+
+    const heart = pizzazz.makeIcon("heart", red, 4).centerReg(page1)   
+            .addPhysics({shape:"circle",restitution:1, angular:.4});
+
+    var min =50;
+    var max = 100;
+    heart.on("click", function (e) {
+
+        var upForce = -rand(min, max);
+        let sideForce = (e.stageX-heart.x)*upForce/150;
+        heart.impulse(sideForce, -300, e.stageX, e.stageY);
+        var sprite = new Sprite (asset("legs.png"),4,2)
+                    .sca(1.4)
+                    .centerReg(heart)
+                    .run();  
+        score.text = Number(score.text)+1;
+        kicks.play();
+    });
+
+    const endPane = new Pane ({
+                     width:250,
+                     backgroundColor:"white",
+                     close:true,
+       });
+     
+    page1.triangle = new Triangle(50,50,50,red)
+        .rot(90)
+        .hov(1)
+        .rot(90)
+        .center(endPane);   
+    page1.triangle.on("mousedown", () => {
+        pages.go(page2, "right");
+    });
+   
+
+
+    // reset score if ball hits the bottom
+    heart.contact(function (obj, body) { 
+        if (body == physics.borderBottom) {
+            score.text = 0;
+        }
+        if(score.text == 10){
+             endPane.show();
+        }
+    })
+
+
+            
+    layoutManager.add(
+        new Layout(page1, [
+            {object:header1, height:20, align:CENTER, maxWidth:100},
+            {object:content1, marginTop:5},
+            {object:footer1, marginTop:5, maxWidth:50, backgroundColor:red}        
+         ], 5, light, true, new Shape(), stage)
+    );
+    
+
+    
+    // PAGE 2
+    
+    const page2 = new Container(stageW,stageH).addTo();
+    const header2 = asset("headings.png").clone().addTo(page2);
+    // page2.backing = new Rectangle(page2.width, page2.height, light).addTo(page2);
+    const content2 = new Container(600,800).addTo(page2);
+    const man = asset("loveMan.png").scaleTo(content2).center(content2);   
+    const hurt = asset("hurt.png").center(content2).drag();
+
+    // hurt.on("click", function (e) {
+    //     if (hurt.hitTest(man)) {
+    //         zog("hitting")
+    //         new Sprite (asset("hurts.png"),3,1)
+    //                     .sca(1.4)
+    //                     .centerReg(man)
+    //                     .run();  
+    //             };        
+    // }); 
+    Ticker.add(function(){
+        content2.loop(function(man){
+            if(man.hitTestReg(hurt)){
+                zog("11111")
+                kicks.play();
+                new Sprite (asset("hurts.png"),4,1)
+                        .sca(.6)
+                        .centerReg()
+                        .loc(man)
+                        .run();  
+                        
+            }
+        },true);
+    });
+    
+            
+
+
+   
+    const footer2 = new Container(500,100).addTo(page2);
+
+    page2.triangle = new Triangle(80,80,80,dark)
+        .alp(.8)
+        .hov(1)
+        .rot(-90)
+        .center(footer2);
+    
+    page2.triangle.on("click", () => {
+        // pages.go(page2, "right", "slide", 1000);
+        pages.go(page1, "left");
+    });
+        
+    const pages = new Pages([
+        {page:page1, swipe:["help", "help", "help", "help"]}, 
+        {page:page2, swipe:[page1, page1, "help", "help"]}
+    ], "slide", 700).addTo();
+    
+    pages.on("help", () => {
+        if (pages.page == page2) {
+            zogg("helping");
+        } else {
+            zogr("helping");
+        }        
+    });
+    
+    
+    
+    layoutManager.add(
+        new Layout(page2, [
+            {object:header2, height:20, align:CENTER, maxWidth:100},
+            {object:content2, marginTop:5},      
+            {object:footer2, maxHeight:50}        
+        ], 5, "#c3d2e5", true, new Shape(), stage)
+    );    
+ 
+    layoutManager.dispose();
+    frame.on("resize", () => {
+        stageW = frame.width;
+        stageH = frame.height; 
+        button1.loc(stageW*.1, stageH*.9);
+        hurt.loc(stageW*.1, stageH*.4);
+        heart.loc(stageW*.5, stageH*.1);
+        layoutManager.resize();       
+    });
+
+    stage.update();
+});
+
+</script>
+<meta name="viewport" content="width=device-width, user-scalable=no" />
+</head>
+<body></body>
+</html>
